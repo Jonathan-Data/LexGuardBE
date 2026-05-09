@@ -40,6 +40,7 @@ jobs:
         OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY || 'mock-key' }}
         QDRANT_HOST: 'localhost'
         QDRANT_PORT: 6333
+        PYTHONPATH: .
 
   build:
     needs: test
