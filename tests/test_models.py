@@ -10,8 +10,9 @@ Validates:
 
 from __future__ import annotations
 
-import pytest
 from datetime import date
+
+import pytest
 from pydantic import ValidationError
 
 from app.models.legal import (
@@ -67,7 +68,9 @@ class TestLegalMetadata:
         assert meta.version_date.year == 2026
         assert meta.version_date.month == 5
 
-    def test_model_dump_json_serialization(self, sample_metadata: LegalMetadata) -> None:
+    def test_model_dump_json_serialization(
+        self, sample_metadata: LegalMetadata
+    ) -> None:
         data = sample_metadata.model_dump(mode="json")
         assert isinstance(data["risk_level"], str)
         assert data["jurisdiction"] == "EU"

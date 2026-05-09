@@ -14,8 +14,8 @@ from loguru import logger
 from pydantic_settings import BaseSettings
 from qdrant_client import AsyncQdrantClient, models
 
-
 # ── Configuration ──────────────────────────────────────────────────────────────
+
 
 class QdrantSettings(BaseSettings):
     """Reads QDRANT_* env vars with sensible local-dev defaults."""
@@ -37,6 +37,7 @@ DENSE_VECTOR_DIM: Final[int] = 1536  # text-embedding-3-small
 
 # ── Collection Schema ──────────────────────────────────────────────────────────
 
+
 async def ensure_collection(client: AsyncQdrantClient) -> None:
     """Create the legal_knowledge collection with hybrid (dense + sparse) vectors
     if it does not already exist."""
@@ -45,7 +46,9 @@ async def ensure_collection(client: AsyncQdrantClient) -> None:
     existing = {c.name for c in collections.collections}
 
     if LEGAL_COLLECTION in existing:
-        logger.debug(f"Collection '{LEGAL_COLLECTION}' already exists — skipping creation.")
+        logger.debug(
+            f"Collection '{LEGAL_COLLECTION}' already exists — skipping creation."
+        )
         return
 
     await client.create_collection(
@@ -66,6 +69,7 @@ async def ensure_collection(client: AsyncQdrantClient) -> None:
 
 
 # ── Session Context Manager ───────────────────────────────────────────────────
+
 
 class QdrantSession:
     """Thin wrapper that yields a managed AsyncQdrantClient."""

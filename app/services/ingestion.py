@@ -44,6 +44,7 @@ _RE_ANNEX = re.compile(r"(?i)\bannex\s+[IVXLCDM]+\b")
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
 
+
 def _extract_hierarchy(text: str) -> dict[str, str | None]:
     """Scan a text fragment for structural markers."""
     return {
@@ -70,6 +71,7 @@ def _build_sparse_vector(text: str) -> tuple[list[int], list[float]]:
 
 
 # ── Layout-Aware Chunking ──────────────────────────────────────────────────────
+
 
 def _layout_aware_chunks(
     elements: list,
@@ -145,11 +147,13 @@ def _layout_aware_chunks(
 
 # ── Ingestion Service ──────────────────────────────────────────────────────────
 
+
 class IngestionService:
     """End-to-end: PDF → vectors → Qdrant."""
 
     def __init__(self) -> None:
         from langchain_openai import OpenAIEmbeddings
+
         self._embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
 
     async def get_embedding(self, text: str) -> list[float]:
@@ -171,13 +175,16 @@ class IngestionService:
 
         # partition_pdf is CPU-bound — run in a thread to avoid blocking the loop
         from unstructured.partition.pdf import partition_pdf
+
         elements = await asyncio.to_thread(
             partition_pdf,
             filename=file_path,
             strategy="hi_res",
             infer_table_structure=True,
         )
-        logger.info(f"Extracted {len(elements)} elements from {os.path.basename(file_path)}")
+        logger.info(
+            f"Extracted {len(elements)} elements from {os.path.basename(file_path)}"
+        )
 
         raw_chunks = _layout_aware_chunks(elements)
         logger.info(f"Produced {len(raw_chunks)} layout-aware chunks")
@@ -209,7 +216,9 @@ class IngestionService:
 
     async def _generate_vectors(self, chunks: list[LegalChunk]) -> None:
         """Batch-embed in slices of EMBED_BATCH_SIZE to stay within API limits."""
-        logger.info(f"Generating vectors for {len(chunks)} chunks (batch={EMBED_BATCH_SIZE})…")
+        logger.info(
+            f"Generating vectors for {len(chunks)} chunks (batch={EMBED_BATCH_SIZE})…"
+        )
         contents = [c.content for c in chunks]
 
         # Dense embeddings — batched via asyncio.gather
@@ -244,6 +253,7 @@ class IngestionService:
             for start in range(0, len(chunks), QDRANT_UPSERT_BATCH):
                 batch = chunks[start : start + QDRANT_UPSERT_BATCH]
                 from qdrant_client import models as qdrant_models
+
                 points = [
                     qdrant_models.PointStruct(
                         id=chunk.chunk_id,

@@ -47,20 +47,20 @@ class AuditState(TypedDict, total=False):
 
     # ── Art. 5 — Prohibited check ─────────────────────────────────────
     is_prohibited: bool
-    prohibited_practice: Optional[str]      # e.g. "Art. 5(1)(c) social scoring"
-    prohibited_reasoning: Optional[str]     # LLM rationale grounded in Art. 5 text
+    prohibited_practice: Optional[str]  # e.g. "Art. 5(1)(c) social scoring"
+    prohibited_reasoning: Optional[str]  # LLM rationale grounded in Art. 5 text
 
     # ── Annex III — High-Risk classification ──────────────────────────
-    risk_tier: Optional[str]                # "Prohibited" | "High" | "Limited" | "Minimal"
-    is_high_risk: bool                      # NEVER overwritten by the auditor
+    risk_tier: Optional[str]  # "Prohibited" | "High" | "Limited" | "Minimal"
+    is_high_risk: bool  # NEVER overwritten by the auditor
 
     # ── Art. 6(3) — Escape Route exemption ────────────────────────────
-    is_exempt: bool                         # True iff one of (a)-(d) is satisfied
-    exemption_criterion: Optional[str]      # "6(3)(a)" .. "6(3)(d)"
-    exemption_reasoning: Optional[str]      # LLM rationale grounded in Art. 6 text
+    is_exempt: bool  # True iff one of (a)-(d) is satisfied
+    exemption_criterion: Optional[str]  # "6(3)(a)" .. "6(3)(d)"
+    exemption_reasoning: Optional[str]  # LLM rationale grounded in Art. 6 text
 
     # ── Art. 50 / May 2026 Transparency Guidelines ────────────────────
-    transparency_obligations: List[str]     # citations from version_date=2026-05-08
+    transparency_obligations: List[str]  # citations from version_date=2026-05-08
 
     # ── Evidence & trail ──────────────────────────────────────────────
     applicable_articles: List[str]

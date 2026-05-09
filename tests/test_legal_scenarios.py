@@ -8,11 +8,12 @@ European Commission Transparency Guidelines retrieval scenarios.
 
 from __future__ import annotations
 
-import pytest
 from datetime import date
 
+import pytest
+
 from app.models.legal import Jurisdiction, LegalChunk, LegalMetadata, RiskLevel
-from app.services.ingestion import _extract_hierarchy, _build_sparse_vector
+from app.services.ingestion import _build_sparse_vector, _extract_hierarchy
 
 
 class TestTransparencyGuidelines2026:

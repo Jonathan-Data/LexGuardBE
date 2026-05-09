@@ -10,20 +10,21 @@ Validates:
 
 from __future__ import annotations
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import pytest
+
+from app.models.legal import LegalChunk
 from app.services.ingestion import (
+    IngestionService,
     _build_sparse_vector,
     _extract_hierarchy,
     _layout_aware_chunks,
-    IngestionService,
     get_ingestion_service,
 )
-from app.models.legal import LegalChunk
-
 
 # ── Hierarchy Extraction ──────────────────────────────────────────────────────
+
 
 class TestHierarchyExtraction:
 
@@ -33,12 +34,16 @@ class TestHierarchyExtraction:
         assert "III" in result["chapter"]
 
     def test_detects_article(self) -> None:
-        result = _extract_hierarchy("Article 6 — Classification rules for high-risk AI systems")
+        result = _extract_hierarchy(
+            "Article 6 — Classification rules for high-risk AI systems"
+        )
         assert result["article"] is not None
         assert "6" in result["article"]
 
     def test_detects_annex(self) -> None:
-        result = _extract_hierarchy("ANNEX III — HIGH-RISK AI SYSTEMS REFERRED TO IN ARTICLE 6(2)")
+        result = _extract_hierarchy(
+            "ANNEX III — HIGH-RISK AI SYSTEMS REFERRED TO IN ARTICLE 6(2)"
+        )
         assert result["annex"] is not None
         assert "III" in result["annex"]
 
@@ -58,6 +63,7 @@ class TestHierarchyExtraction:
 
 # ── Sparse Vector ──────────────────────────────────────────────────────────────
 
+
 class TestSparseVector:
 
     def test_produces_indices_and_values(self) -> None:
@@ -66,7 +72,9 @@ class TestSparseVector:
         assert len(indices) == len(values)
 
     def test_indices_are_sorted(self) -> None:
-        indices, _ = _build_sparse_vector("multiple words to ensure several hash buckets")
+        indices, _ = _build_sparse_vector(
+            "multiple words to ensure several hash buckets"
+        )
         assert indices == sorted(indices)
 
     def test_repeated_terms_increase_frequency(self) -> None:
@@ -77,10 +85,13 @@ class TestSparseVector:
 
 # ── Layout-Aware Chunking ──────────────────────────────────────────────────────
 
+
 class TestLayoutAwareChunking:
 
     @staticmethod
-    def _make_element(text: str, el_type: str = "NarrativeText", page: int = 1) -> MagicMock:
+    def _make_element(
+        text: str, el_type: str = "NarrativeText", page: int = 1
+    ) -> MagicMock:
         el = MagicMock()
         el.__str__ = lambda self: text
         el.strip = lambda: text
@@ -91,9 +102,13 @@ class TestLayoutAwareChunking:
 
     def test_structural_boundary_starts_new_chunk(self) -> None:
         elements = [
-            self._make_element("Some introductory text about the regulation.", "NarrativeText"),
+            self._make_element(
+                "Some introductory text about the regulation.", "NarrativeText"
+            ),
             self._make_element("Article 5 — Prohibited AI Practices", "Title"),
-            self._make_element("The following practices shall be prohibited.", "NarrativeText"),
+            self._make_element(
+                "The following practices shall be prohibited.", "NarrativeText"
+            ),
         ]
         chunks = _layout_aware_chunks(elements, target_size=5000)
         assert len(chunks) >= 2
@@ -101,7 +116,10 @@ class TestLayoutAwareChunking:
     def test_article_metadata_propagated(self) -> None:
         elements = [
             self._make_element("Article 14 — Human Oversight", "Title"),
-            self._make_element("High-risk AI systems shall be designed to allow oversight.", "NarrativeText"),
+            self._make_element(
+                "High-risk AI systems shall be designed to allow oversight.",
+                "NarrativeText",
+            ),
         ]
         chunks = _layout_aware_chunks(elements, target_size=5000)
         assert any("Article 14" in c.get("article", "") for c in chunks)
@@ -118,6 +136,7 @@ class TestLayoutAwareChunking:
 
 
 # ── Ingestion Service Integration ─────────────────────────────────────────────
+
 
 class TestIngestionService:
 
@@ -138,12 +157,17 @@ class TestIngestionService:
         # Mock the unstructured module so the lazy import inside process_pdf succeeds
         mock_unstructured = MagicMock()
         with (
-            patch.dict(sys.modules, {
-                "unstructured": mock_unstructured,
-                "unstructured.partition": mock_unstructured.partition,
-                "unstructured.partition.pdf": mock_unstructured.partition.pdf,
-            }),
-            patch("app.services.ingestion.asyncio.to_thread", new_callable=AsyncMock) as mock_thread,
+            patch.dict(
+                sys.modules,
+                {
+                    "unstructured": mock_unstructured,
+                    "unstructured.partition": mock_unstructured.partition,
+                    "unstructured.partition.pdf": mock_unstructured.partition.pdf,
+                },
+            ),
+            patch(
+                "app.services.ingestion.asyncio.to_thread", new_callable=AsyncMock
+            ) as mock_thread,
             patch.object(service, "_generate_vectors", new_callable=AsyncMock),
         ):
             mock_thread.return_value = [mock_element]
@@ -152,10 +176,13 @@ class TestIngestionService:
             assert len(chunks) >= 1
 
     @pytest.mark.asyncio
-    async def test_upload_batches_correctly(self, mock_qdrant_client: AsyncMock) -> None:
+    async def test_upload_batches_correctly(
+        self, mock_qdrant_client: AsyncMock
+    ) -> None:
         """Verify upserts are batched."""
-        from app.db.session import qdrant_session
         from contextlib import asynccontextmanager
+
+        from app.db.session import qdrant_session
 
         @asynccontextmanager
         async def _mock_client():

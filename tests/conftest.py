@@ -4,13 +4,14 @@ Shared fixtures for the LexGuardBE test suite.
 
 from __future__ import annotations
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 
 from app.models.legal import Jurisdiction, LegalChunk, LegalMetadata, RiskLevel
 
-
 # ── Reusable Fixtures ──────────────────────────────────────────────────────────
+
 
 @pytest.fixture
 def sample_metadata() -> LegalMetadata:

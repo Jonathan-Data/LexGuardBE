@@ -9,9 +9,10 @@ Validates:
 
 from __future__ import annotations
 
-import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
 from contextlib import asynccontextmanager
+from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 
 from app.db.session import (
     DENSE_VECTOR_DIM,

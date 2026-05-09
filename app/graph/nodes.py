@@ -23,7 +23,6 @@ from app.db.qdrant import search_legal_docs
 from app.models.state import AuditState
 from app.services.ingestion import get_ingestion_service
 
-
 # ══════════════════════════════════════════════════════════════════════════════
 #  LLM client (lazy singleton)
 # ══════════════════════════════════════════════════════════════════════════════
@@ -41,6 +40,7 @@ def _get_llm():
     global _llm
     if _llm is None:
         from langchain_openai import ChatOpenAI
+
         _llm = ChatOpenAI(model="gpt-4o", temperature=0)
     return _llm
 
@@ -64,21 +64,22 @@ def _format_excerpts(docs) -> str:
 #  LLM output schemas
 # ══════════════════════════════════════════════════════════════════════════════
 
+
 class ProhibitedDecision(BaseModel):
     """Structured output for the Art. 5 prohibition check."""
 
     is_prohibited: bool = Field(
         description="True only if the system meets one of the practices "
-                    "expressly prohibited by Article 5(1)(a)–(h)."
+        "expressly prohibited by Article 5(1)(a)–(h)."
     )
     matched_practice: Optional[str] = Field(
         default=None,
         description="Citation of the specific prohibition, e.g. "
-                    "'Art. 5(1)(c) — social scoring by public authorities'.",
+        "'Art. 5(1)(c) — social scoring by public authorities'.",
     )
     reasoning: str = Field(
         description="Explanation grounded in the retrieved Article 5 text. "
-                    "Reference excerpt numbers ([1], [2], …)."
+        "Reference excerpt numbers ([1], [2], …)."
     )
 
 
@@ -87,24 +88,25 @@ class ExemptionDecision(BaseModel):
 
     is_exempt: bool = Field(
         description="True iff at least one of the four cumulative criteria "
-                    "in Art. 6(3)(a)–(d) is satisfied AND the system does not "
-                    "perform profiling of natural persons."
+        "in Art. 6(3)(a)–(d) is satisfied AND the system does not "
+        "perform profiling of natural persons."
     )
     criterion: Optional[str] = Field(
         default=None,
         description="Which sub-paragraph applies: '6(3)(a)', '6(3)(b)', "
-                    "'6(3)(c)', or '6(3)(d)'. Null when not exempt.",
+        "'6(3)(c)', or '6(3)(d)'. Null when not exempt.",
     )
     reasoning: str = Field(
         description="Justification grounded in the retrieved Art. 6 text. "
-                    "Reference excerpt numbers ([1], [2], …) and explain "
-                    "why the criterion is met or unmet."
+        "Reference excerpt numbers ([1], [2], …) and explain "
+        "why the criterion is met or unmet."
     )
 
 
 # ══════════════════════════════════════════════════════════════════════════════
 #  NODE 1: CLASSIFIER  (Art. 5 → Annex III → Art. 50)
 # ══════════════════════════════════════════════════════════════════════════════
+
 
 async def classifier_node(state: AuditState) -> AuditState:
     """Risk classification with three sequential checks:
@@ -161,9 +163,7 @@ async def classifier_node(state: AuditState) -> AuditState:
     decision_p: ProhibitedDecision = await prohibited_llm.ainvoke(prohibition_prompt)
 
     if decision_p.is_prohibited:
-        logger.warning(
-            f"PROHIBITED practice detected: {decision_p.matched_practice}"
-        )
+        logger.warning(f"PROHIBITED practice detected: {decision_p.matched_practice}")
         state["is_prohibited"] = True
         state["prohibited_practice"] = decision_p.matched_practice
         state["prohibited_reasoning"] = decision_p.reasoning
@@ -175,9 +175,7 @@ async def classifier_node(state: AuditState) -> AuditState:
         for doc in art5_docs:
             content = (doc.payload or {}).get("content", "")[:160]
             state["citations"].append(f"Art. 5 excerpt: {content}…")
-        state["reasoning_trail"].append(
-            f"Art. 5 prohibition: {decision_p.reasoning}"
-        )
+        state["reasoning_trail"].append(f"Art. 5 prohibition: {decision_p.reasoning}")
         state["next_steps"].append(
             "IMMEDIATE: Block deployment. Escalate to Legal Officer. "
             "System falls under Art. 5 — no high-risk pathway available."
@@ -185,9 +183,7 @@ async def classifier_node(state: AuditState) -> AuditState:
         return state  # short-circuit: no Annex III / transparency / Art. 6(3)
 
     state["is_prohibited"] = False
-    state["reasoning_trail"].append(
-        f"Art. 5 cleared: {decision_p.reasoning}"
-    )
+    state["reasoning_trail"].append(f"Art. 5 cleared: {decision_p.reasoning}")
 
     # ── Step 2: Annex III — High-Risk classification ───────────────────
     annex_matches = await search_legal_docs(
@@ -217,9 +213,7 @@ async def classifier_node(state: AuditState) -> AuditState:
 
     # ── Step 3: Art. 50 / May 2026 Transparency Guidelines ─────────────
     if state.get("is_ai_generated"):
-        logger.info(
-            "is_ai_generated=True → applying May 8, 2026 Transparency check."
-        )
+        logger.info("is_ai_generated=True → applying May 8, 2026 Transparency check.")
 
         transparency_query_vec = await service.get_embedding(
             "Article 50 transparency obligations AI-generated content "
@@ -270,6 +264,7 @@ async def classifier_node(state: AuditState) -> AuditState:
 # ══════════════════════════════════════════════════════════════════════════════
 #  NODE 2: COMPLIANCE AUDITOR  (Article 6(3) Escape Route)
 # ══════════════════════════════════════════════════════════════════════════════
+
 
 async def compliance_auditor(state: AuditState) -> AuditState:
     """LLM-driven Article 6(3) escape-route evaluation.
@@ -370,7 +365,9 @@ async def compliance_auditor(state: AuditState) -> AuditState:
 
     # ── Apply the decision (NEVER touch is_high_risk) ──────────────────
     state["is_exempt"] = decision_e.is_exempt
-    state["exemption_criterion"] = decision_e.criterion if decision_e.is_exempt else None
+    state["exemption_criterion"] = (
+        decision_e.criterion if decision_e.is_exempt else None
+    )
     state["exemption_reasoning"] = decision_e.reasoning
 
     if decision_e.is_exempt:

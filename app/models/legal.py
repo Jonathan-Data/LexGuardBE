@@ -15,13 +15,14 @@ from typing import Optional
 
 from pydantic import BaseModel, Field
 
-
 # Python 3.11+ has StrEnum natively; for older runtimes, emulate it.
 if sys.version_info >= (3, 11):
     from enum import StrEnum
 else:
+
     class StrEnum(str, Enum):
         """Backport of StrEnum for Python < 3.11."""
+
         pass
 
 
