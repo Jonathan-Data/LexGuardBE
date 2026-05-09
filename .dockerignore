@@ -1,0 +1,12 @@
+# Exclude tests and dev artifacts from the production image
+tests/
+.pytest_cache/
+.env
+.gitignore
+.claude
+.vscode
+.idea
+*.md
+Documentation/
+__pycache__/
+*.pyc
